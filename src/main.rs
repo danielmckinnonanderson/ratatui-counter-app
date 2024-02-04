@@ -7,9 +7,16 @@ use crossterm::event::{
     Event,
     KeyEventKind, KeyCode,
 };
+use lazy_static::lazy_static;
 use ratatui::{prelude::CrosstermBackend, Terminal, Frame, widgets::Paragraph};
 
 mod commands;
+
+pub const FRAME_RATE_MILLIS: u64 = 16;
+lazy_static! {
+    pub static ref FRAME_WAIT_DURATION: std::time::Duration = std::time::Duration::from_millis(FRAME_RATE_MILLIS);
+}
+
 
 pub struct AppState {
     counter: i32,
@@ -34,12 +41,8 @@ fn main() -> Result<()> {
     };
 
     while !app_state.should_quit {
-        terminal.draw(|frame: &mut Frame| {
-            frame.render_widget(Paragraph::new(format!("Counter: {}", app_state.counter)), frame.size());
-        })?;
-
+        // Check for keypress events.
         let key_opt = poll_for_keypress();
-
         let command_opt: Option<AppCommand> = if let Result::Ok(key_event) = key_opt {
             match key_event {
                 Some(keycode) => AppCommand::from_key(keycode),
@@ -47,15 +50,24 @@ fn main() -> Result<()> {
             }
         } else { None };
 
-        // If command is present, run it
+        // If the pressed key corresponds to a command, run the command.
         if let Some(command) = command_opt {
             // TODO - map over command_opt
             let updated = command.run(&mut app_state);
             match updated {
-                Ok(_) => continue, // If all is good, move on to the next frame.
-                Err(_) => break,   // If we couldn't apply the command, stop due to error.
+                Ok(_) => {},     // If all is good, move on and draw the TUI.
+                Err(_) => break, // If we couldn't apply the command, stop due to error.
             };
         };
+
+        // Draw the TUI for the current frame
+        terminal.draw(|frame: &mut Frame| {
+            println!("Closure");
+            frame.render_widget(Paragraph::new(
+                format!("Counter: {}", app_state.counter)
+            ),
+            frame.size());
+        })?;
     }
 
     // Broke out of loop, initiate shutdown.
@@ -65,10 +77,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-
 fn poll_for_keypress() -> Result<Option<KeyCode>> {
     if let Event::Key(key) = crossterm::event::read().context("Could not read event.")? {
-        // TODO - Add handling for other kinds of events
         if key.kind == KeyEventKind::Press {
             match key.code {
                 KeyCode::Char('j') => Ok(Some(KeyCode::Char('j'))),
@@ -85,7 +95,8 @@ fn poll_for_keypress() -> Result<Option<KeyCode>> {
 }
 
 fn wait() -> Result<()> {
-    if crossterm::event::poll(std::time::Duration::from_millis(250))? {
+    if crossterm::event::poll(*FRAME_WAIT_DURATION)? {
+
     }
 
     Ok(())

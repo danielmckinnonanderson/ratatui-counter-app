@@ -4,6 +4,7 @@ use crossterm::event::KeyCode;
 use crate::AppState;
 
 
+#[derive(Debug)]
 pub enum AppCommand {
     Quit,
     Increment,
