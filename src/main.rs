@@ -43,26 +43,20 @@ fn main() -> Result<()> {
     while !app_state.should_quit {
         // Check for keypress events.
         let key_opt = poll_for_keypress();
-        let command_opt: Option<AppCommand> = if let Result::Ok(key_event) = key_opt {
-            match key_event {
-                Some(keycode) => AppCommand::from_key(keycode),
-                None => None
-            }
-        } else { None };
+
+        let command_opt: Option<AppCommand> = key_opt.ok()
+            .and_then(|key_event| key_event.and_then(AppCommand::from_key));
 
         // If the pressed key corresponds to a command, run the command.
         if let Some(command) = command_opt {
-            // TODO - map over command_opt
-            let updated = command.run(&mut app_state);
-            match updated {
-                Ok(_) => {},     // If all is good, move on and draw the TUI.
-                Err(_) => break, // If we couldn't apply the command, stop due to error.
-            };
+            if let Err(_) = command.run(&mut app_state) {
+                // If running the command returned an error, stop looping.
+                break;
+            }
         };
 
         // Draw the TUI for the current frame
         terminal.draw(|frame: &mut Frame| {
-            println!("Closure");
             frame.render_widget(Paragraph::new(
                 format!("Counter: {}", app_state.counter)
             ),
@@ -81,9 +75,7 @@ fn poll_for_keypress() -> Result<Option<KeyCode>> {
     if let Event::Key(key) = crossterm::event::read().context("Could not read event.")? {
         if key.kind == KeyEventKind::Press {
             match key.code {
-                KeyCode::Char('j') => Ok(Some(KeyCode::Char('j'))),
-                KeyCode::Char('k') => Ok(Some(KeyCode::Char('k'))),
-                KeyCode::Char('q') => Ok(Some(KeyCode::Char('q'))),
+                KeyCode::Char('j') | KeyCode::Char('k') | KeyCode::Char('q' )=> Ok(Some(key.code)),
                 _ => Ok(None),
             }
         } else {
