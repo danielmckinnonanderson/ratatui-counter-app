@@ -1,14 +1,13 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use crossterm::event::KeyCode;
 
 use crate::AppState;
-
 
 #[derive(Debug)]
 pub enum AppCommand {
     Quit,
     Increment,
-    Decrement
+    Decrement,
 }
 
 impl AppCommand {
@@ -18,7 +17,7 @@ impl AppCommand {
             KeyCode::Char('j') => Some(Self::Increment),
             KeyCode::Char('k') => Some(Self::Decrement),
             KeyCode::Char('q') => Some(Self::Quit),
-            _ =>  None
+            _ => None,
         }
     }
 
@@ -28,15 +27,15 @@ impl AppCommand {
             AppCommand::Quit => {
                 AppCommand::quit(app_state);
                 Ok(())
-            },
+            }
             AppCommand::Increment => {
                 AppCommand::increment_counter(app_state);
                 Ok(())
-            },
+            }
             AppCommand::Decrement => {
                 AppCommand::decrement_counter(app_state);
                 Ok(())
-            },
+            }
         }
     }
 
@@ -52,4 +51,3 @@ impl AppCommand {
         app_state.counter -= 1;
     }
 }
-
