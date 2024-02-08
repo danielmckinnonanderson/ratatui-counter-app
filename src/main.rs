@@ -3,9 +3,9 @@
 
 use anyhow::{Context, Result};
 use commands::AppCommand;
-use crossterm::event::{Event, KeyCode, KeyEventKind};
+use crossterm::{event::{Event, KeyCode, KeyEventKind}, style::Colored};
 use lazy_static::lazy_static;
-use ratatui::{prelude::CrosstermBackend, widgets::Paragraph, Frame, Terminal};
+use ratatui::{prelude::{CrosstermBackend, Rect, Layout, Direction, Constraint}, widgets::{Paragraph, Block, Borders}, Frame, Terminal, text::Span, style::{Style, Stylize}};
 
 mod commands;
 
@@ -39,7 +39,6 @@ fn main() -> Result<()> {
     while !app_state.should_quit {
         // Check for keypress events.
         let key_opt = poll_for_keypress();
-
         let command_opt: Option<AppCommand> = key_opt
             .ok()
             .and_then(|key_event| key_event.and_then(AppCommand::from_key));
@@ -54,10 +53,13 @@ fn main() -> Result<()> {
 
         // Draw the TUI for the current frame
         terminal.draw(|frame: &mut Frame| {
+            // Draw a popup window
+            let popup_area = centered_rect(frame.size(), 36, 36);
+
             frame.render_widget(
-                Paragraph::new(format!("Counter: {}", app_state.counter)),
-                frame.size(),
-            );
+                Block::default().borders(Borders::all()).title("Main"),
+                popup_area
+            )
         })?;
     }
 
@@ -83,7 +85,26 @@ fn poll_for_keypress() -> Result<Option<KeyCode>> {
     }
 }
 
-fn wait() -> Result<()> {
-    crossterm::event::poll(*FRAME_WAIT_DURATION)?;
-    Ok(())
+fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ]).split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ]).split(popup_layout[1])[1]
 }
+
+fn ui_yellow_span(_app_state: &AppState, frame: &mut Frame) {
+    let span = "This text is yellow.".yellow();
+    frame.render_widget(span, frame.size());
+}
+
